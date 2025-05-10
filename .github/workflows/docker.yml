@@ -39,6 +39,6 @@ jobs:
 
       - name: Build and push Docker image for PHP ${{ matrix.php-version }}
         run: |
-          IMAGE_NAME=ghcr.io/spomkylabs/phpqa:${{ matrix.php-version }}
+          IMAGE_NAME=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
           docker build --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE_NAME .
           docker push $IMAGE_NAME
