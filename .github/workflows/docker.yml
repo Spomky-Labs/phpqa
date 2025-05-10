@@ -12,9 +12,17 @@ jobs:
 
     strategy:
       matrix:
-        php-version: [8.1, 8.2, 8.3, 8.4]
+        php-version: [8.1, 8.2, 8.3, 8.4, 8.5]
 
     steps:
+      - name: Check base image existence
+        run: |
+          BASE_IMAGE=jakzal/phpqa:php${{ matrix.php-version }}
+          if ! docker pull $BASE_IMAGE > /dev/null 2>&1; then
+            echo "::warning::Skipping PHP ${{ matrix.php-version }}: base image not available."
+            exit 0
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
