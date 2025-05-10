@@ -3,7 +3,8 @@ FROM jakzal/phpqa:php${PHP_VERSION}
 
 LABEL maintainer="Florent Morselli <florent.morselli@spomky-labs.com>"
 
-RUN composer global require castor/cli
+RUN curl -sSL https://castor.jolicode.com/install | bash && \
+    mv ~/.local/bin/castor /usr/local/bin/castor
 
 ENV PATH="/root/.composer/vendor/bin:$PATH"
 
