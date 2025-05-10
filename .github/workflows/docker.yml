@@ -1,0 +1,38 @@
+name: Build and publish phpqa images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build PHP QA Docker Image
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-version: [8.1, 8.2, 8.3, 8.4, 8.5]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker metadata
+        id: meta
+        run: echo "image=ghcr.io/${{ github.repository }}:${{ matrix.php-version }}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image for PHP ${{ matrix.php-version }}
+        run: |
+          docker build \
+            --build-arg PHP_VERSION=${{ matrix.php-version }} \
+            -t ${{ steps.meta.outputs.image }} \
+            .
+          docker push ${{ steps.meta.outputs.image }}
