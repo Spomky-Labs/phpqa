@@ -6,33 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build PHP QA Docker Image
+  build-amd64:
+    name: Build on amd64
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        php-version: [8.2, 8.3, 8.4, 8.5]
+        php-version: [8.4]
 
     steps:
-      - name: Check if base image exists
-        id: check
-        run: |
-          BASE_IMAGE="jakzal/phpqa:php${{ matrix.php-version }}"
-          echo "Checking base image: $BASE_IMAGE"
-          if docker manifest inspect "$BASE_IMAGE" > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Skipping PHP ${{ matrix.php-version }} — base image not found: $BASE_IMAGE"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Exit early if base image is missing
-        if: steps.check.outputs.exists == 'false'
-        run: exit 0
-
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -41,9 +23,55 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        if: steps.check.outputs.exists == 'true'
+      - name: Build and push amd64 image
         run: |
-          IMAGE_NAME=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
-          docker build --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+          IMAGE=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-amd64
+          docker build --platform=linux/amd64 --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE .
+          docker push $IMAGE
+
+  build-arm64:
+    name: Build on arm64
+    runs-on: ubuntu-22.04-arm
+    strategy:
+      matrix:
+        php-version: [8.4]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push arm64 image
+        run: |
+          IMAGE=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-arm64
+          docker build --platform=linux/arm64 --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE .
+          docker push $IMAGE
+
+  merge:
+    name: Merge manifests
+    runs-on: ubuntu-latest
+    needs: [build-amd64, build-arm64]
+    strategy:
+      matrix:
+        php-version: [8.2, 8.3, 8.4, 8.5]
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge and push manifest
+        run: |
+          docker manifest create ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }} \
+            --amend ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-amd64 \
+            --amend ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-arm64
+
+          docker manifest push ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
