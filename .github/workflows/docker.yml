@@ -8,6 +8,7 @@ on:
 
 env:
   IMAGE_NAME_BASE: ghcr.io/${{ github.repository_owner }}/phpqa
+  DESCRIPTION: "PHPQA Docker image with tools for static analysis, code style checks, and testing"
 
 jobs:
   prepare:
@@ -63,7 +64,11 @@ jobs:
       - name: Build and push AMD64
         run: |
           IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-amd64
-          docker build --platform=linux/amd64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
+          docker build \
+            --platform=linux/amd64 \
+            --build-arg PHP_VERSION=${{ matrix.php }} \
+            --label org.opencontainers.image.description="${{ env.DESCRIPTION }}" \
+            -t $IMAGE .
           docker push $IMAGE
 
   build-arm64:
@@ -83,7 +88,11 @@ jobs:
       - name: Build and push ARM64
         run: |
           IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-arm64
-          docker build --platform=linux/arm64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
+          docker build \
+            --platform=linux/arm64 \
+            --build-arg PHP_VERSION=${{ matrix.php }} \
+            --label org.opencontainers.image.description="${{ env.DESCRIPTION }}" \
+            -t $IMAGE .
           docker push $IMAGE
 
   manifest:
