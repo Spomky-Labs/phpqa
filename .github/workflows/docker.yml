@@ -75,7 +75,6 @@ jobs:
             --cache-to=type=gha,mode=max \
             --push \
             -t $IMAGE .
-          docker push $IMAGE
 
   build-arm64:
     needs: prepare
@@ -105,7 +104,6 @@ jobs:
             --cache-to=type=gha,mode=max \
             --push \
             -t $IMAGE .
-          docker push $IMAGE
 
   manifest:
     needs: [build-amd64, build-arm64, prepare]
