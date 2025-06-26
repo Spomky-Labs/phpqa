@@ -18,6 +18,7 @@ jobs:
       major: ${{ steps.tag.outputs.major }}
       minor: ${{ steps.tag.outputs.minor }}
       short_sha: ${{ steps.sha.outputs.short }}
+      image_name: ${{ steps.normalize.outputs.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,6 +42,10 @@ jobs:
             echo "is_tag=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Normalize image name
+        id: normalize
+        run: echo "name=${IMAGE_NAME_BASE,,}" >> "$GITHUB_OUTPUT"
+
   build-amd64:
     needs: prepare
     runs-on: ubuntu-latest
@@ -57,7 +62,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push AMD64
         run: |
-          IMAGE=${{ env.IMAGE_NAME_BASE }}:${{ matrix.php }}-amd64
+          IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-amd64
           docker build --platform=linux/amd64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
           docker push $IMAGE
 
@@ -77,7 +82,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push ARM64
         run: |
-          IMAGE=${{ env.IMAGE_NAME_BASE }}:${{ matrix.php }}-arm64
+          IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-arm64
           docker build --platform=linux/arm64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
           docker push $IMAGE
 
@@ -96,26 +101,27 @@ jobs:
 
       - name: Merge and push Docker manifest
         run: |
-          BASE=${{ env.IMAGE_NAME_BASE }}
+          IMAGE=${{ needs.prepare.outputs.image_name }}
           VERSION=${{ matrix.php }}
+
           docker buildx imagetools create \
-            --tag $BASE:$VERSION \
-            --tag $BASE:$VERSION-${{ needs.prepare.outputs.short_sha }} \
-            $BASE:$VERSION-amd64 \
-            $BASE:$VERSION-arm64
+            --tag $IMAGE:$VERSION \
+            --tag $IMAGE:$VERSION-${{ needs.prepare.outputs.short_sha }} \
+            $IMAGE:$VERSION-amd64 \
+            $IMAGE:$VERSION-arm64
 
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             docker buildx imagetools create \
-              --tag $BASE:$VERSION-latest \
-              $BASE:$VERSION-amd64 \
-              $BASE:$VERSION-arm64
+              --tag $IMAGE:$VERSION-latest \
+              $IMAGE:$VERSION-amd64 \
+              $IMAGE:$VERSION-arm64
           fi
 
           if [[ "${{ needs.prepare.outputs.is_tag }}" == "true" && "${{ needs.prepare.outputs.version }}" == "$VERSION" ]]; then
             docker buildx imagetools create \
-              --tag $BASE:${{ needs.prepare.outputs.version }} \
-              --tag $BASE:${{ needs.prepare.outputs.major }} \
-              --tag $BASE:${{ needs.prepare.outputs.major }}.${{ needs.prepare.outputs.minor }} \
-              $BASE:$VERSION-amd64 \
-              $BASE:$VERSION-arm64
+              --tag $IMAGE:${{ needs.prepare.outputs.version }} \
+              --tag $IMAGE:${{ needs.prepare.outputs.major }} \
+              --tag $IMAGE:${{ needs.prepare.outputs.major }}.${{ needs.prepare.outputs.minor }} \
+              $IMAGE:$VERSION-amd64 \
+              $IMAGE:$VERSION-arm64
           fi
