@@ -1,77 +1,121 @@
-name: Build and publish phpqa images
+name: CI & Build PHPQA
 
 on:
   push:
     branches: [main]
+    tags: ["*"]
   workflow_dispatch:
 
+env:
+  IMAGE_NAME_BASE: ghcr.io/${{ github.repository_owner }}/phpqa
+
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      is_tag: ${{ steps.tag.outputs.is_tag }}
+      version: ${{ steps.tag.outputs.version }}
+      major: ${{ steps.tag.outputs.major }}
+      minor: ${{ steps.tag.outputs.minor }}
+      short_sha: ${{ steps.sha.outputs.short }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Extract version from tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            version="${GITHUB_REF#refs/tags/}"
+            major=$(cut -d. -f1 <<< "$version")
+            minor=$(cut -d. -f2 <<< "$version")
+            echo "is_tag=true" >> "$GITHUB_OUTPUT"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "major=$major" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-amd64:
-    name: Build on amd64
+    needs: prepare
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: [8.4]
-
+        php: [8.4]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push amd64 image
+      - name: Build and push AMD64
         run: |
-          IMAGE=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-amd64
-          docker build --platform=linux/amd64 --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE .
+          IMAGE=${{ env.IMAGE_NAME_BASE }}:${{ matrix.php }}-amd64
+          docker build --platform=linux/amd64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
           docker push $IMAGE
 
   build-arm64:
-    name: Build on arm64
+    needs: prepare
     runs-on: ubuntu-22.04-arm
     strategy:
       matrix:
-        php-version: [8.4]
-
+        php: [8.4]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push arm64 image
+      - name: Build and push ARM64
         run: |
-          IMAGE=ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-arm64
-          docker build --platform=linux/arm64 --build-arg PHP_VERSION=${{ matrix.php-version }} -t $IMAGE .
+          IMAGE=${{ env.IMAGE_NAME_BASE }}:${{ matrix.php }}-arm64
+          docker build --platform=linux/arm64 --build-arg PHP_VERSION=${{ matrix.php }} -t $IMAGE .
           docker push $IMAGE
 
-  merge:
-    name: Merge manifests
+  manifest:
+    needs: [build-amd64, build-arm64, prepare]
     runs-on: ubuntu-latest
-    needs: [build-amd64, build-arm64]
     strategy:
       matrix:
-        php-version: [8.2, 8.3, 8.4, 8.5]
-
+        php: [8.4]
     steps:
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge and push manifest
+      - name: Merge and push Docker manifest
         run: |
-          docker manifest create ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }} \
-            --amend ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-amd64 \
-            --amend ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}-arm64
+          BASE=${{ env.IMAGE_NAME_BASE }}
+          VERSION=${{ matrix.php }}
+          docker buildx imagetools create \
+            --tag $BASE:$VERSION \
+            --tag $BASE:$VERSION-${{ needs.prepare.outputs.short_sha }} \
+            $BASE:$VERSION-amd64 \
+            $BASE:$VERSION-arm64
 
-          docker manifest push ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            docker buildx imagetools create \
+              --tag $BASE:$VERSION-latest \
+              $BASE:$VERSION-amd64 \
+              $BASE:$VERSION-arm64
+          fi
+
+          if [[ "${{ needs.prepare.outputs.is_tag }}" == "true" && "${{ needs.prepare.outputs.version }}" == "$VERSION" ]]; then
+            docker buildx imagetools create \
+              --tag $BASE:${{ needs.prepare.outputs.version }} \
+              --tag $BASE:${{ needs.prepare.outputs.major }} \
+              --tag $BASE:${{ needs.prepare.outputs.major }}.${{ needs.prepare.outputs.minor }} \
+              $BASE:$VERSION-amd64 \
+              $BASE:$VERSION-arm64
+          fi
