@@ -67,12 +67,13 @@ jobs:
       - name: Build and push AMD64
         run: |
           IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-amd64
-          docker build \
+          docker buildx build \
             --platform=linux/amd64 \
             --build-arg PHP_VERSION=${{ matrix.php }} \
             --label org.opencontainers.image.description="${{ env.DESCRIPTION }}" \
             --cache-from=type=gha \
             --cache-to=type=gha,mode=max \
+            --push \
             -t $IMAGE .
           docker push $IMAGE
 
@@ -96,12 +97,13 @@ jobs:
       - name: Build and push ARM64
         run: |
           IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-arm64
-          docker build \
+          docker buildx build \
             --platform=linux/arm64 \
             --build-arg PHP_VERSION=${{ matrix.php }} \
             --label org.opencontainers.image.description="${{ env.DESCRIPTION }}" \
             --cache-from=type=gha \
             --cache-to=type=gha,mode=max \
+            --push \
             -t $IMAGE .
           docker push $IMAGE
 
