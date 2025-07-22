@@ -19,7 +19,7 @@ RUN pecl install xdebug \
  && docker-php-ext-enable xdebug
 
 # Install AMQP extension from source
-ENV EXT_AMQP_VERSION=master
+ENV EXT_AMQP_VERSION=latest
 RUN git clone --branch $EXT_AMQP_VERSION --depth 1 https://github.com/php-amqp/php-amqp.git /usr/src/php/ext/amqp \
  && cd /usr/src/php/ext/amqp && git submodule update --init \
  && docker-php-ext-install amqp
