@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     librabbitmq-dev \
     git \
     curl \
+    tar \
  && docker-php-source extract
 
 # Add install-php-extensions
@@ -50,7 +51,7 @@ RUN pecl install xdebug \
 
 # Clean up
 RUN docker-php-source delete \
- && apt-get purge -y --auto-remove build-essential autoconf \
+ && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install global PHPStan tools
