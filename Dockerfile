@@ -14,6 +14,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
  && docker-php-source extract
 
+RUN set -eux; \
+	install-php-extensions \
+		@composer \
+		apcu \
+		intl \
+		zip \
+		pdo_pgsql \
+		gmp \
+		gd \
+		imagick \
+		amqp \
+		fileinfo \
+		iconv \
+		exif \
+		gettext \
+		sodium \
+		opcache \
+		redis \
+		uuid \
+		xsl \
+		xml \
+		zip \
+		brotli \
+		zstd \
+	;
+
 # Install Xdebug
 RUN pecl install xdebug \
  && docker-php-ext-enable xdebug
