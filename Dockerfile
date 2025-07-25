@@ -52,6 +52,7 @@ RUN pecl install xdebug \
 # Clean up
 RUN docker-php-source delete \
  && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev \
+ && apt-get install -y --no-install-recommends tar curl \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install global PHPStan tools
