@@ -12,45 +12,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     librabbitmq-dev \
     git \
     curl \
- && docker-php-source extract \
+ && docker-php-source extract
 
-RUN curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
+# Add install-php-extensions
+RUN curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
+    -o /usr/local/bin/install-php-extensions \
  && chmod +x /usr/local/bin/install-php-extensions
+
+# Install PHP extensions
 RUN set -eux; \
-	install-php-extensions \
-		@composer \
-		apcu \
-		intl \
-		zip \
-		pdo_pgsql \
-		gmp \
-		gd \
-		imagick \
-		amqp \
-		fileinfo \
-		iconv \
-		exif \
-		gettext \
-		sodium \
-		opcache \
-		redis \
-		uuid \
-		xsl \
-		xml \
-		zip \
-		brotli \
-		zstd \
-	;
+    install-php-extensions \
+        @composer \
+        apcu \
+        intl \
+        zip \
+        pdo_pgsql \
+        gmp \
+        gd \
+        imagick \
+        amqp \
+        fileinfo \
+        iconv \
+        exif \
+        gettext \
+        sodium \
+        opcache \
+        redis \
+        uuid \
+        xsl \
+        xml \
+        brotli \
+        zstd
 
 # Install Xdebug
 RUN pecl install xdebug \
  && docker-php-ext-enable xdebug
-
-# Install AMQP extension from source
-ENV EXT_AMQP_VERSION=latest
-RUN git clone --branch $EXT_AMQP_VERSION --depth 1 https://github.com/php-amqp/php-amqp.git /usr/src/php/ext/amqp \
- && cd /usr/src/php/ext/amqp && git submodule update --init \
- && docker-php-ext-install amqp
 
 # Clean up
 RUN docker-php-source delete \
