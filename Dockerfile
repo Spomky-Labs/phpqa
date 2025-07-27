@@ -7,43 +7,44 @@ USER root
 
 # Build deps and sources for native extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    autoconf \
-    librabbitmq-dev \
-    git \
-    curl \
-    tar \
+	build-essential \
+	autoconf \
+	librabbitmq-dev \
+	git \
+	curl \
+	tar \
  && docker-php-source extract
 
 # Add install-php-extensions
 RUN curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
-    -o /usr/local/bin/install-php-extensions \
+	-o /usr/local/bin/install-php-extensions \
  && chmod +x /usr/local/bin/install-php-extensions
 
 # Install PHP extensions
 RUN set -eux; \
-    install-php-extensions \
-        @composer \
-        apcu \
-        intl \
-        zip \
-        pdo_pgsql \
-        gmp \
-        gd \
-        imagick \
-        amqp \
-        fileinfo \
-        iconv \
-        exif \
-        gettext \
-        sodium \
-        opcache \
-        redis \
-        uuid \
-        xsl \
-        xml \
-        brotli \
-        zstd
+	install-php-extensions \
+		@composer \
+		apcu \
+		intl \
+		zip \
+		pdo_pgsql \
+		gmp \
+		gd \
+		imagick \
+		amqp \
+		fileinfo \
+		ftp \
+		iconv \
+		exif \
+		gettext \
+		sodium \
+		opcache \
+		redis \
+		uuid \
+		xsl \
+		xml \
+		brotli \
+		zstd
 
 # Install Xdebug
 RUN pecl install xdebug \
@@ -57,9 +58,9 @@ RUN docker-php-source delete \
 
 # Install global PHPStan tools
 RUN composer global bin phpstan require \
-    php-static-analysis/phpstan-extension \
-    staabm/phpstan-todo-by \
-    struggle-for-php/sfp-phpstan-psr-log
+	php-static-analysis/phpstan-extension \
+	staabm/phpstan-todo-by \
+	struggle-for-php/sfp-phpstan-psr-log
 
 # Install phpunit plugins
 RUN composer global bin phpunit require ergebnis/phpunit-slow-test-detector
