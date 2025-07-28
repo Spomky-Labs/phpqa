@@ -60,7 +60,8 @@ RUN docker-php-source delete \
 RUN composer global bin phpstan require \
 	php-static-analysis/phpstan-extension \
 	staabm/phpstan-todo-by \
-	struggle-for-php/sfp-phpstan-psr-log
+	struggle-for-php/sfp-phpstan-psr-log \
+    --no-scripts --no-interaction --no-suggest
 
 # Install phpunit plugins
 RUN composer global bin phpunit require ergebnis/phpunit-slow-test-detector
