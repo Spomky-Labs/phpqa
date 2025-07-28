@@ -5,6 +5,8 @@ on:
     branches: [main]
     tags: ["*"]
   workflow_dispatch:
+  schedule:
+    - cron: '19 2 * * 0'
 
 env:
   IMAGE_NAME_BASE: ghcr.io/${{ github.repository_owner }}/phpqa
@@ -20,6 +22,7 @@ jobs:
       minor: ${{ steps.tag.outputs.minor }}
       short_sha: ${{ steps.sha.outputs.short }}
       image_name: ${{ steps.normalize.outputs.name }}
+      is_scheduled: ${{ steps.scheduled.outputs.is_scheduled }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,6 +50,10 @@ jobs:
         id: normalize
         run: echo "name=${IMAGE_NAME_BASE,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Check if run is scheduled
+        id: scheduled
+        run: echo "is_scheduled=${{ github.event_name == 'schedule' }}" >> "$GITHUB_OUTPUT"
+
   build-amd64:
     needs: prepare
     runs-on: ubuntu-latest
@@ -69,7 +76,14 @@ jobs:
       - name: Build and push AMD64
         run: |
           IMAGE=${{ needs.prepare.outputs.image_name }}:${{ matrix.php }}-amd64
-          docker buildx build             --platform=linux/amd64             --build-arg PHP_VERSION=${{ matrix.php }}             --label org.opencontainers.image.description="${{ env.DESCRIPTION }}"             --cache-from=type=gha             --cache-to=type=gha,mode=max             --push             -t $IMAGE .
+          docker buildx build \
+            --platform=linux/amd64 \
+            --build-arg PHP_VERSION=${{ matrix.php }} \
+            --label org.opencontainers.image.description="${{ env.DESCRIPTION }}" \
+            --cache-from=type=gha \
+            --cache-to=type=gha,mode=max \
+            --push \
+            -t $IMAGE .
 
   build-arm64:
     needs: prepare
@@ -128,18 +142,28 @@ jobs:
             $IMAGE:$VERSION-amd64 \
             $IMAGE:$VERSION-arm64
 
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # Tag :latest for the latest stable version (currently 8.4)
+          if [[ "$VERSION" == "8.4" ]]; then
             docker buildx imagetools create \
-              --tag $IMAGE:$VERSION-latest \
+              --tag $IMAGE:latest \
               $IMAGE:$VERSION-amd64 \
               $IMAGE:$VERSION-arm64
           fi
 
+          # Tag version if pushed
           if [[ "${{ needs.prepare.outputs.is_tag }}" == "true" && "${{ needs.prepare.outputs.version }}" == "$VERSION" ]]; then
             docker buildx imagetools create \
               --tag $IMAGE:${{ needs.prepare.outputs.version }} \
               --tag $IMAGE:${{ needs.prepare.outputs.major }} \
               --tag $IMAGE:${{ needs.prepare.outputs.major }}.${{ needs.prepare.outputs.minor }} \
+              $IMAGE:$VERSION-amd64 \
+              $IMAGE:$VERSION-arm64
+          fi
+
+          # Weekly tag for scheduled builds
+          if [[ "${{ needs.prepare.outputs.is_scheduled }}" == "true" ]]; then
+            docker buildx imagetools create \
+              --tag $IMAGE:$VERSION-weekly \
               $IMAGE:$VERSION-amd64 \
               $IMAGE:$VERSION-arm64
           fi
