@@ -64,7 +64,12 @@ RUN composer global bin phpstan require \
     --no-scripts --no-interaction --no-suggest
 
 # Install phpunit plugins
-RUN composer global bin phpunit require ergebnis/phpunit-slow-test-detector
+RUN composer global bin phpunit require \
+    ergebnis/phpunit-slow-test-detector \
+    symfony/browser-kit:"7.3.*" \
+    symfony/css-selector:"7.3.*" \
+    zenstruck/foundry:"^2.6" \
+    --no-scripts --no-interaction --no-suggest
 
 # Install Castor
 RUN curl -sSL https://castor.jolicode.com/install | bash \
