@@ -66,8 +66,8 @@ RUN composer global bin phpstan require \
 # Install phpunit plugins
 RUN composer global bin phpunit require \
     ergebnis/phpunit-slow-test-detector \
-    symfony/browser-kit:"7.3.*" \
-    symfony/css-selector:"7.3.*" \
+    symfony/browser-kit:"^6.4|^7.0|^8.0" \
+    symfony/css-selector:"^6.4|^7.0|^8.0" \
     zenstruck/foundry:"^2.6" \
     --no-scripts --no-interaction --no-suggest
 
