@@ -80,11 +80,6 @@ RUN composer global bin phpunit require \
     zenstruck/foundry:"^2.8" \
     --no-scripts --no-interaction --no-suggest
 
-# Install Infection plugins
-RUN composer global bin infection require \
-    phpstan/mutant-killer-infection-runner \
-    --no-scripts --no-interaction --no-suggest
-
 # Install Castor
 RUN curl -sSL https://castor.jolicode.com/install | bash \
  && chmod +x ~/.local/bin/castor \

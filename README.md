@@ -313,11 +313,7 @@ docker run --rm -v $(pwd):/project -w /project \
 
 ## 🦠 Infection - Mutation Testing
 
-Mutation testing with enhanced plugins to eliminate false positives.
-
-### Included Plugins
-
-- **phpstan/mutant-killer-infection-runner** - Uses PHPStan to identify invalid mutations
+Mutation testing framework to ensure your tests are effective.
 
 ### Usage Example
 
@@ -326,7 +322,7 @@ Mutation testing with enhanced plugins to eliminate false positives.
 docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     infection --threads=4 --min-msi=80
 
-# With PHPStan mutant killer
+# Run only on covered code
 docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     infection --threads=4 --only-covered
 ```
@@ -345,12 +341,12 @@ Configure in `infection.json5`:
 }
 ```
 
-### Mutant Killer Plugin
+### What is Mutation Testing?
 
-The `phpstan/mutant-killer-infection-runner` plugin prevents false positives by:
-- Running PHPStan analysis on escaped mutants
-- Identifying mutations that would be caught by static analysis
-- Reducing unnecessary test writing for impossible scenarios
+Mutation testing modifies your code (creates mutants) to verify if your tests catch the changes:
+- If a test fails, the mutant is "killed" (good - your tests work)
+- If tests pass, the mutant "escaped" (bad - you need better tests)
+- MSI (Mutation Score Indicator) shows the percentage of killed mutants
 
 ---
 
