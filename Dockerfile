@@ -90,10 +90,11 @@ RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
  && chmod +x /usr/local/bin/pie
 
 # Install GeckoDriver for Firefox
-RUN wget -q https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.35.0-linux64.tar.gz \
- && tar -zxf geckodriver-v0.35.0-linux64.tar.gz -C /usr/local/bin \
+ARG GECKODRIVER_VERSION=0.36.0
+RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v${GECKODRIVER_VERSION}/geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz \
+ && tar -zxf geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz -C /usr/local/bin \
  && chmod +x /usr/local/bin/geckodriver \
- && rm geckodriver-v0.35.0-linux64.tar.gz
+ && rm geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz
 
 # Configure Panther environment for Docker
 ENV PANTHER_NO_SANDBOX=1
