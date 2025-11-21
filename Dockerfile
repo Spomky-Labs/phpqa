@@ -68,13 +68,18 @@ RUN composer global bin phpunit require \
     ergebnis/phpunit-slow-test-detector \
     symfony/browser-kit:"^6.4|^7.0|^8.0" \
     symfony/css-selector:"^6.4|^7.0|^8.0" \
-    zenstruck/foundry:"^2.6" \
+    zenstruck/foundry:"^2.8" \
     --no-scripts --no-interaction --no-suggest
 
 # Install Castor
 RUN curl -sSL https://castor.jolicode.com/install | bash \
  && chmod +x ~/.local/bin/castor \
  && mv ~/.local/bin/castor /usr/local/bin/castor
+
+# Install PIE (PHP Installer for Extensions)
+RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
+	-o /usr/local/bin/pie \
+ && chmod +x /usr/local/bin/pie
 
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
