@@ -94,7 +94,6 @@ Additional PHPStan extensions are pre-installed for stricter analysis:
 - **php-static-analysis/phpstan-extension** - Enhanced static analysis
 - **staabm/phpstan-todo-by** - TODO comments with expiry dates
 - **struggle-for-php/sfp-phpstan-psr-log** - PSR-3 Logger interface support
-- **slam/phpstan-extensions** - Strict rules (unused variables, ::class notation)
 - **phpstan/phpstan-deprecation-rules** - Detect deprecated code usage
 - **phpstan/phpstan-strict-rules** - Extra strict type checking rules
 
@@ -110,12 +109,13 @@ docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
 
 ### Extension Features
 
-**slam/phpstan-extensions** provides rules like:
-- `UnusedVariableRule` - Detect unused variables
-- `StringToClassRule` - Enforce `::class` notation
-- `MissingClosureParameterTypehintRule` - Require closure type hints
+**phpstan/phpstan-strict-rules** provides extra strict checks like:
+- Disallow empty() - Use more explicit checks instead
+- Require boolean in if conditions
+- Disallow variable variables
+- Strict comparison operators
 
-**phpstan-deprecation-rules** helps you:
+**phpstan/phpstan-deprecation-rules** helps you:
 - Find all deprecated code usage in your codebase
 - Prepare for major version upgrades
 - Maintain compatibility with dependencies

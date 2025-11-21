@@ -65,7 +65,6 @@ RUN composer global bin phpstan require \
 	php-static-analysis/phpstan-extension \
 	staabm/phpstan-todo-by \
 	struggle-for-php/sfp-phpstan-psr-log \
-	slam/phpstan-extensions \
 	phpstan/phpstan-deprecation-rules \
 	phpstan/phpstan-strict-rules \
     --no-scripts --no-interaction --no-suggest
