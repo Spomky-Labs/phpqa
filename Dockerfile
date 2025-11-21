@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	git \
 	curl \
 	tar \
+	wget \
+	chromium \
+	chromium-driver \
+	firefox-esr \
  && docker-php-source extract
 
 # Add install-php-extensions
@@ -61,14 +65,24 @@ RUN composer global bin phpstan require \
 	php-static-analysis/phpstan-extension \
 	staabm/phpstan-todo-by \
 	struggle-for-php/sfp-phpstan-psr-log \
+	slam/phpstan-extensions \
+	phpstan/phpstan-deprecation-rules \
+	phpstan/phpstan-strict-rules \
     --no-scripts --no-interaction --no-suggest
 
 # Install phpunit plugins
 RUN composer global bin phpunit require \
     ergebnis/phpunit-slow-test-detector \
+    digitalrevolution/phpunit-extensions \
     symfony/browser-kit:"^6.4|^7.0|^8.0" \
     symfony/css-selector:"^6.4|^7.0|^8.0" \
+    symfony/panther:"^2.0" \
     zenstruck/foundry:"^2.8" \
+    --no-scripts --no-interaction --no-suggest
+
+# Install Infection plugins
+RUN composer global bin infection require \
+    phpstan/mutant-killer-infection-runner \
     --no-scripts --no-interaction --no-suggest
 
 # Install Castor
@@ -80,6 +94,18 @@ RUN curl -sSL https://castor.jolicode.com/install | bash \
 RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
 	-o /usr/local/bin/pie \
  && chmod +x /usr/local/bin/pie
+
+# Install GeckoDriver for Firefox
+RUN wget -q https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.35.0-linux64.tar.gz \
+ && tar -zxf geckodriver-v0.35.0-linux64.tar.gz -C /usr/local/bin \
+ && chmod +x /usr/local/bin/geckodriver \
+ && rm geckodriver-v0.35.0-linux64.tar.gz
+
+# Configure Panther environment for Docker
+ENV PANTHER_NO_SANDBOX=1
+ENV PANTHER_CHROME_ARGUMENTS='--disable-dev-shm-usage --no-sandbox --disable-gpu --headless --window-size=1920,1080'
+ENV PANTHER_CHROME_DRIVER_BINARY=/usr/bin/chromedriver
+ENV PANTHER_FIREFOX_ARGUMENTS='-headless'
 
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
