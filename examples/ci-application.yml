@@ -1,0 +1,28 @@
+name: 📁 PHP CI
+
+# Example GitHub Actions workflow for Application Projects
+# Copy this to .github/workflows/ci.yml in your project
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags: ['*']
+  pull_request: ~
+  workflow_dispatch: ~
+
+jobs:
+  ci:
+    uses: spomky-labs/phpqa/.github/workflows/reusable-ci.yml@main
+    with:
+      project_type: 'application'
+      php_versions: '["8.3", "8.4"]'
+      experimental_php_versions: '[]'  # Often no experimental PHP for apps
+      default_php_version: '8.4'
+      enable_lowest_deps: false  # Usually not needed for applications
+      enable_infection: false    # Often disabled for applications
+      enable_deptrac: true
+      enable_license_check: false  # Usually not needed for applications
+      enable_exported_files_check: false  # Usually not relevant for applications
+      enable_js_tests: true      # Applications often have JS tests

@@ -1,0 +1,346 @@
+name: 🔄 Reusable PHP CI Workflow
+
+on:
+  workflow_call:
+    inputs:
+      project_type:
+        description: 'Project type (library, bundle, application)'
+        required: false
+        type: string
+        default: 'library'
+      php_versions:
+        description: 'JSON array of PHP versions to test'
+        required: false
+        type: string
+        default: '["8.2", "8.3", "8.4"]'
+      experimental_php_versions:
+        description: 'JSON array of experimental PHP versions'
+        required: false
+        type: string
+        default: '["8.5"]'
+      default_php_version:
+        description: 'Default PHP version for QA checks'
+        required: false
+        type: string
+        default: '8.4'
+      enable_lowest_deps:
+        description: 'Enable lowest dependencies test'
+        required: false
+        type: boolean
+        default: true
+      enable_infection:
+        description: 'Enable mutation testing with Infection'
+        required: false
+        type: boolean
+        default: true
+      enable_deptrac:
+        description: 'Enable Deptrac architecture checks'
+        required: false
+        type: boolean
+        default: true
+      enable_license_check:
+        description: 'Enable license compatibility check'
+        required: false
+        type: boolean
+        default: true
+      enable_exported_files_check:
+        description: 'Enable exported files check'
+        required: false
+        type: boolean
+        default: true
+      exported_files:
+        description: 'Expected exported files (comma-separated)'
+        required: false
+        type: string
+        default: 'CODE_OF_CONDUCT.md,LICENSE,README.md,SECURITY.md,composer.json'
+      excluded_dirs_export:
+        description: 'Directories to exclude from export check (regex)'
+        required: false
+        type: string
+        default: '^(assets|bin|config|fixtures|frankenphp|migrations|public|src|templates|translations)/'
+      infection_branch_pattern:
+        description: 'Run infection only on branches matching this pattern'
+        required: false
+        type: string
+        default: '*.x'
+      enable_js_tests:
+        description: 'Enable JavaScript tests'
+        required: false
+        type: boolean
+        default: false
+      castor_path:
+        description: 'Path to castor executable or command'
+        required: false
+        type: string
+        default: 'castor'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pre_checks:
+    name: "0️⃣ Pre-checks"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Check file permissions"
+        run: |
+          NON_EXECUTABLE=$(find . -type f -not -path './.git/*' -not -path './bin/console' -not -path './frankenphp/docker-entrypoint.sh' -not -path './link' -executable)
+          if [[ -n "$NON_EXECUTABLE" ]]; then
+            echo "Found non-executable files with executable permission:"
+            echo "$NON_EXECUTABLE"
+            exit 1
+          fi
+
+      - name: "Find non-printable ASCII characters"
+        run: |
+          if LC_ALL=C.UTF-8 find . -type f -name "*.php" -print0 | xargs -0 grep -PHn "[[:cntrl:]]"; then
+            echo "Non-printable ASCII characters found"
+            exit 1
+          fi
+
+  prepare_dependencies:
+    name: "📦 Prepare Dependencies"
+    needs: [pre_checks]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    outputs:
+      cache-key: ${{ steps.cache-key-generator.outputs.key }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: cache-key-generator
+        run: echo "key=composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ steps.cache-key-generator.outputs.key }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: highest
+          composer-options: --optimize-autoloader
+
+  phpstan:
+    name: "1️⃣ Static Analysis (PHPStan)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: ${{ inputs.castor_path }} qa:phpstan
+
+  ecs:
+    name: "2️⃣ Coding Standards (ECS)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: ${{ inputs.castor_path }} qa:ecs
+
+  rector:
+    name: "3️⃣ Refactoring (Rector)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: ${{ inputs.castor_path }} qa:rector
+
+  validate:
+    name: "4️⃣ Validate composer.json"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: ${{ inputs.castor_path }} qa:validate
+
+  lint:
+    name: "5️⃣ Syntax Check"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: composer exec -- parallel-lint src tests
+
+  check_licenses:
+    name: "6️⃣ License Check"
+    if: ${{ inputs.enable_license_check }}
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: ${{ inputs.castor_path }} qa:check-licenses
+
+  deptrac:
+    name: "7️⃣ Architecture Check (Deptrac)"
+    if: ${{ inputs.enable_deptrac }}
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: ${{ inputs.castor_path }} qa:deptrac
+
+  js_tests:
+    name: "🟨 JavaScript Tests"
+    if: ${{ inputs.enable_js_tests }}
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: ${{ inputs.castor_path }} qa:js
+
+  tests:
+    name: "🧪 Tests (PHP ${{ matrix.php-version }}${{ matrix.lowest-deps && ' - Lowest' || '' }})"
+    needs:
+      - prepare_dependencies
+      - phpstan
+      - ecs
+      - rector
+      - lint
+      - validate
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ${{ fromJson(inputs.php_versions) }}
+        lowest-deps: [false]
+        experimental: [false]
+        include:
+          - php-version: ${{ fromJson(inputs.php_versions)[0] }}
+            lowest-deps: ${{ inputs.enable_lowest_deps }}
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
+    env:
+      XDEBUG_MODE: coverage
+      PHP_VERSION: ${{ matrix.php-version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.lowest-deps }}" = "true" ]; then
+            composer update --prefer-lowest --no-interaction --no-progress
+          else
+            composer install --no-interaction --no-progress
+          fi
+
+      - name: Run PHPUnit
+        run: ${{ inputs.castor_path }} qa:phpunit
+
+  tests_experimental:
+    name: "🧪 Tests (PHP ${{ matrix.php-version }} - Experimental)"
+    needs:
+      - prepare_dependencies
+      - phpstan
+      - ecs
+      - rector
+      - lint
+      - validate
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ${{ fromJson(inputs.experimental_php_versions) }}
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
+    env:
+      XDEBUG_MODE: coverage
+      PHP_VERSION: ${{ matrix.php-version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --ignore-platform-reqs
+
+      - name: Run PHPUnit
+        run: ${{ inputs.castor_path }} qa:phpunit
+
+  infection:
+    name: "🧬 Mutation Testing"
+    needs: [tests]
+    if: ${{ inputs.enable_infection && endsWith(github.ref_name, inputs.infection_branch_pattern) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ inputs.default_php_version }}
+    env:
+      XDEBUG_MODE: coverage
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+      - name: Run PHPUnit
+        run: ${{ inputs.castor_path }} qa:phpunit
+      - name: Execute Infection
+        run: ${{ inputs.castor_path }} qa:infect
+
+  exported_files:
+    name: "8️⃣ Exported Files Check"
+    if: ${{ inputs.enable_exported_files_check }}
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check exported files
+        run: |
+          EXPECTED="${{ inputs.exported_files }}"
+          CURRENT=$(git archive HEAD | tar --list | grep -v '/$' | grep -Ev '${{ inputs.excluded_dirs_export }}' | sort | paste -sd "," -)
+          echo "CURRENT = ${CURRENT}"
+          echo "EXPECTED = ${EXPECTED}"
+          if [[ "$CURRENT" != "$EXPECTED" ]]; then
+            echo "❌ Exported files do not match expected list"
+            exit 1
+          fi

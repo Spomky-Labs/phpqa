@@ -1,12 +1,62 @@
-# 🧪 Spomky PHP QA Docker Image
+# 🧪 Spomky PHP QA Docker Image & Centralized CI/CD
 
-This repository provides a custom Docker image based on [`jakzal/phpqa`](https://github.com/jakzal/phpqa) with:
+This repository provides:
 
-- ✅ Additional QA tools and extensions for PHP projects
-- 🛠️ [Castor](https://github.com/jolicode/castor) pre-installed as a task runner
-- 📦 [PIE](https://github.com/php/pie) - PHP Installer for Extensions
-- 🧪 Enhanced PHPUnit, PHPStan, and Infection tooling
-- 🌐 Browser testing support with Symfony Panther (Chrome & Firefox)
+1. **🐳 Custom Docker Image** based on [`jakzal/phpqa`](https://github.com/jakzal/phpqa) with:
+   - ✅ Additional QA tools and extensions for PHP projects
+   - 🛠️ [Castor](https://github.com/jolicode/castor) pre-installed as a task runner
+   - 📦 [PIE](https://github.com/php/pie) - PHP Installer for Extensions
+   - 🧪 Enhanced PHPUnit, PHPStan, and Infection tooling
+   - 🌐 Browser testing support with Symfony Panther (Chrome & Firefox)
+
+2. **🔄 Centralized Castor Tasks** for quality assurance:
+   - Reusable Castor tasks across all your projects
+   - Minimal configuration required per project
+   - Support for Libraries, Bundles, and Applications
+
+3. **⚙️ Reusable GitHub Actions Workflows**:
+   - Single workflow configuration for all projects
+   - Customizable per project type
+   - Consistent CI/CD across your organization
+
+📖 **[See Integration Guide](INTEGRATION.md) for using centralized Castor & GitHub Actions**
+
+---
+
+## 🚀 Quick Start
+
+### Automatic Migration (Recommended)
+
+```bash
+# From the phpqa repository
+./scripts/migrate-project.sh /path/to/your/project library
+
+# Or for an application
+./scripts/migrate-project.sh /path/to/your/project application
+```
+
+This creates everything you need:
+- ✅ `castor.php` with auto-download from GitHub
+- ✅ `.phpqa-config.php` configured for your project type
+- ✅ `.github/workflows/ci.yml` ready to use
+- ✅ `.gitignore` with `.castor-cache/`
+
+Then just run:
+```bash
+cd /path/to/your/project
+castor qa:all
+```
+
+### Manual Setup
+
+Copy one of the examples:
+```bash
+cp examples/castor-simple.php your-project/castor.php
+cd your-project
+castor qa:all  # Downloads PHPQA tasks automatically
+```
+
+📖 **[Full Getting Started Guide](GETTING-STARTED.md)**
 
 ---
 

@@ -1,0 +1,10 @@
+# PHPQA cache (used for testing)
+.castor-cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Temporary files
+tmp-phpqa/
+*.backup

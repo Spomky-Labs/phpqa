@@ -1,0 +1,30 @@
+name: 📁 PHP CI
+
+# Example GitHub Actions workflow for Library/Bundle Projects
+# Copy this to .github/workflows/ci.yml in your project
+
+on:
+  push:
+    branches:
+      - '*.*.x'
+      - '*.x'
+    tags: ['*']
+  pull_request: ~
+  workflow_dispatch: ~
+
+jobs:
+  ci:
+    uses: spomky-labs/phpqa/.github/workflows/reusable-ci.yml@main
+    with:
+      project_type: 'library'
+      php_versions: '["8.2", "8.3", "8.4"]'
+      experimental_php_versions: '["8.5"]'
+      default_php_version: '8.4'
+      enable_lowest_deps: true
+      enable_infection: true
+      enable_deptrac: true
+      enable_license_check: true
+      enable_exported_files_check: true
+      exported_files: 'CODE_OF_CONDUCT.md,LICENSE,README.md,SECURITY.md,composer.json'
+      infection_branch_pattern: '.x'
+      enable_js_tests: false
