@@ -69,6 +69,34 @@ docker pull ghcr.io/spomky-labs/phpqa:<version>
 
 Replace `<version>` with one of the supported PHP versions below.
 
+### Build Arguments
+
+You can customize the image by using build arguments to include or exclude browsers:
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `WITH_CHROMIUM` | `true` | Install Chromium and ChromeDriver for Panther |
+| `WITH_FIREFOX` | `true` | Install Firefox ESR and GeckoDriver for Panther |
+
+#### Build Examples
+
+```bash
+# Build without any browsers (smallest image, ~500MB-1GB smaller)
+docker build --build-arg WITH_CHROMIUM=false --build-arg WITH_FIREFOX=false \
+    -t ghcr.io/spomky-labs/phpqa:8.4-no-browsers .
+
+# Build with Chrome only
+docker build --build-arg WITH_FIREFOX=false \
+    -t ghcr.io/spomky-labs/phpqa:8.4-chrome-only .
+
+# Build with Firefox only
+docker build --build-arg WITH_CHROMIUM=false \
+    -t ghcr.io/spomky-labs/phpqa:8.4-firefox-only .
+
+# Build with both browsers (default behavior)
+docker build -t ghcr.io/spomky-labs/phpqa:8.4 .
+```
+
 ---
 
 ## 🔢 Supported PHP Versions
@@ -245,17 +273,21 @@ End-to-end testing with real browsers (Chrome and Firefox) for JavaScript-heavy 
 
 ### Available Browsers
 
-- **Chromium** + ChromeDriver (pre-configured)
-- **Firefox ESR** + GeckoDriver v0.35.0 (pre-configured)
+- **Chromium** + ChromeDriver (optional, enabled by default with `WITH_CHROMIUM=true`)
+- **Firefox ESR** + GeckoDriver v0.36.0 (optional, enabled by default with `WITH_FIREFOX=true`)
+
+**Note:** If you don't need browser testing, you can build the image without browsers using `--build-arg WITH_CHROMIUM=false --build-arg WITH_FIREFOX=false` to reduce the image size by approximately 500MB-1GB.
 
 ### Environment Configuration
 
-The following environment variables are pre-configured:
+The following environment variables are configured when browsers are installed:
 
 ```bash
 PANTHER_NO_SANDBOX=1
+# Only if WITH_CHROMIUM=true:
 PANTHER_CHROME_ARGUMENTS='--disable-dev-shm-usage --no-sandbox --disable-gpu --headless --window-size=1920,1080'
 PANTHER_CHROME_DRIVER_BINARY=/usr/bin/chromedriver
+# Only if WITH_FIREFOX=true:
 PANTHER_FIREFOX_ARGUMENTS='-headless'
 ```
 
