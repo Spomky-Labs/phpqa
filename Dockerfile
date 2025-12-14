@@ -79,7 +79,7 @@ RUN composer global bin phpunit require \
     digitalrevolution/phpunit-extensions \
     symfony/browser-kit:"^6.4|^7.0|^8.0" \
     symfony/css-selector:"^6.4|^7.0|^8.0" \
-    symfony/panther:"^2.0" \
+    symfony/panther:"^2.3" \
     zenstruck/foundry:"^2.8" \
     --no-scripts --no-interaction --no-suggest \
  && composer global clear-cache
@@ -111,6 +111,10 @@ RUN if [ "$WITH_CHROMIUM" = "true" ]; then \
  && if [ "$WITH_FIREFOX" = "true" ]; then \
 		echo 'export PANTHER_FIREFOX_ARGUMENTS="-headless"' >> /etc/profile.d/panther.sh; \
 	fi
+
+# Fix permissions for /tools directory to allow cache operations
+RUN chown -R 1001:1001 /tools \
+ && chmod -R 755 /tools
 
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001

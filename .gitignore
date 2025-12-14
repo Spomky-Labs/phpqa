@@ -8,3 +8,7 @@
 # Temporary files
 tmp-phpqa/
 *.backup
+
+# Test fixtures and temporary test files
+tests/fixtures/*.tgz
+tests/fixtures/*.tar.gz

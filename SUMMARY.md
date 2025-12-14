@@ -39,6 +39,11 @@ use function Castor\io;
 $phpqaFile = __DIR__ . '/.castor-cache/phpqa.php';
 $phpqaUrl = 'https://raw.githubusercontent.com/Spomky-Labs/phpqa/main/.castor/phpqa.php';
 
+$cacheDir = __DIR__ . '/.castor-cache';
+if (!is_dir($cacheDir) && !mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
+    throw new \RuntimeException(sprintf('Directory "%s" was not created', $cacheDir));
+}
+
 if (!file_exists($phpqaFile)) {
     io()->note('Downloading PHPQA tasks...');
     file_put_contents($phpqaFile, file_get_contents($phpqaUrl));
@@ -328,3 +333,48 @@ You now have:
 ✅ Comprehensive documentation
 
 **Time saved: 80-90% reduction in QA configuration maintenance**
+
+## 🔧 Docker Image Improvements (Dec 2024)
+
+### Issues Fixed
+
+**Issue 1: Cache Extraction Permissions**
+- **Problem**: tar failed with "Cannot utime: Operation not permitted" when GitHub Actions tried to restore caches
+- **Root Cause**: `/tools` directory owned by root, but container runs as user 1001
+- **Fix**: Added proper ownership in Dockerfile:116-117
+
+**Issue 2: Symfony Panther/BrowserKit Incompatibility**
+- **Problem**: Fatal error with Panther < 2.3 and BrowserKit 8.0
+- **Root Cause**: Old Panther versions incompatible with strict typing in BrowserKit 8.0
+- **Fix**: Updated Panther constraint to `^2.3` in Dockerfile:82
+
+### Testing Infrastructure
+
+New automated tests prevent regressions:
+
+1. **`tests/test-image.sh`** - Validates published images (10 comprehensive tests)
+2. **`tests/test-local-build.sh`** - Tests local builds before publishing
+3. **GitHub Actions CI** - Automatic testing after each image build
+4. **`tests/README.md`** - Complete testing documentation
+
+**Test Coverage:**
+- Essential tools verification (tar, git, composer, etc.)
+- PHP version validation
+- Directory permissions (1001:1001)
+- Cache write permissions
+- Symfony Panther/BrowserKit compatibility
+- Tar functionality with timestamp operations
+- PHP extensions availability
+
+### Running Tests
+
+```bash
+# Test published image
+./tests/test-image.sh 8.4
+
+# Test local build
+./tests/test-local-build.sh 8.4
+
+# Test all versions
+for v in 8.2 8.3 8.4; do ./tests/test-image.sh $v; done
+```

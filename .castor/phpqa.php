@@ -21,7 +21,7 @@ use function Castor\guard_min_version;
 use function Castor\io;
 use function Castor\run;
 
-guard_min_version('v0.23.0');
+guard_min_version('v1.0.0');
 
 /**
  * Get project configuration from .phpqa-config.php or use defaults
