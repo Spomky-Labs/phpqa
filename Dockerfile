@@ -79,13 +79,11 @@ RUN composer global bin phpunit require \
     digitalrevolution/phpunit-extensions \
     symfony/browser-kit:"^6.4|^7.0|^8.0" \
     symfony/css-selector:"^6.4|^7.0|^8.0" \
-    symfony/panther:"^2.3" \
     zenstruck/foundry:"^2.8" \
     --no-scripts --no-interaction --no-suggest \
  && composer global clear-cache
 
 # Install standalone tools in a single layer
-ARG GECKODRIVER_VERSION=0.36.0
 RUN curl -sSL https://castor.jolicode.com/install | bash \
  && chmod +x ~/.local/bin/castor \
  && mv ~/.local/bin/castor /usr/local/bin/castor \
@@ -93,24 +91,7 @@ RUN curl -sSL https://castor.jolicode.com/install | bash \
  && curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
 	-o /usr/local/bin/pie \
  && chmod +x /usr/local/bin/pie \
- # Install GeckoDriver (only if Firefox is enabled)
- && if [ "$WITH_FIREFOX" = "true" ]; then \
-		wget -q https://github.com/mozilla/geckodriver/releases/download/v${GECKODRIVER_VERSION}/geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz \
-		&& tar -zxf geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz -C /usr/local/bin \
-		&& chmod +x /usr/local/bin/geckodriver \
-		&& rm geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz; \
-	fi \
  && rm -rf /tmp/* /var/tmp/*
-
-# Configure Panther environment for Docker (only set if browsers are installed)
-ENV PANTHER_NO_SANDBOX=1
-RUN if [ "$WITH_CHROMIUM" = "true" ]; then \
-		echo 'export PANTHER_CHROME_ARGUMENTS="--disable-dev-shm-usage --no-sandbox --disable-gpu --headless --window-size=1920,1080"' >> /etc/profile.d/panther.sh \
-		&& echo 'export PANTHER_CHROME_DRIVER_BINARY=/usr/bin/chromedriver' >> /etc/profile.d/panther.sh; \
-	fi \
- && if [ "$WITH_FIREFOX" = "true" ]; then \
-		echo 'export PANTHER_FIREFOX_ARGUMENTS="-headless"' >> /etc/profile.d/panther.sh; \
-	fi
 
 # Fix permissions for /tools directory to allow cache operations
 RUN chown -R 1001:1001 /tools \

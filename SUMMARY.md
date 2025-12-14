@@ -344,9 +344,13 @@ You now have:
 - **Fix**: Added proper ownership in Dockerfile:116-117
 
 **Issue 2: Symfony Panther/BrowserKit Incompatibility**
-- **Problem**: Fatal error with Panther < 2.3 and BrowserKit 8.0
-- **Root Cause**: Old Panther versions incompatible with strict typing in BrowserKit 8.0
-- **Fix**: Updated Panther constraint to `^2.3` in Dockerfile:82
+- **Problem**: Fatal error with Panther and BrowserKit 8.0 causing persistent build failures
+- **Root Cause**: Panther had ongoing compatibility issues with newer Symfony components
+- **Fix**: Removed Panther entirely from the Docker image (Dockerfile:82)
+  - Removed symfony/panther dependency
+  - Removed Panther environment configuration
+  - Removed GeckoDriver (only needed for Panther)
+- **Note**: Projects can still install Panther locally as needed
 
 ### Testing Infrastructure
 
@@ -362,7 +366,6 @@ New automated tests prevent regressions:
 - PHP version validation
 - Directory permissions (1001:1001)
 - Cache write permissions
-- Symfony Panther/BrowserKit compatibility
 - Tar functionality with timestamp operations
 - PHP extensions availability
 

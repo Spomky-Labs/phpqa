@@ -53,11 +53,9 @@ Both test scripts verify:
 2. **PHP Version**: Verifies the correct PHP version is installed
 3. **Directory Permissions**: Checks that `/tools` directory has correct ownership (1001:1001)
 4. **Cache Permissions**: Validates write permissions for `/tools/.composer/cache`
-5. **Symfony Panther Version**: Ensures Panther 2.3+ is installed (compatible with BrowserKit 8.0)
-6. **BrowserKit Compatibility**: Tests that Panther and BrowserKit can work together
-7. **Tar Functionality**: Simulates cache extraction scenarios
-8. **PHP Extensions**: Verifies essential PHP extensions are loaded
-9. **Timestamp Operations**: Tests tar's ability to handle file timestamps (utime)
+5. **Tar Functionality**: Simulates cache extraction scenarios
+6. **PHP Extensions**: Verifies essential PHP extensions are loaded
+7. **Timestamp Operations**: Tests tar's ability to handle file timestamps (utime)
 
 ## Known Issues & Fixes
 
@@ -87,13 +85,15 @@ must be compatible with Symfony\Component\BrowserKit\AbstractBrowser::doRequest(
 ```
 
 **Root Cause:**
-Panther versions < 2.3 are incompatible with BrowserKit 8.0 due to strict type declarations.
+Panther had ongoing compatibility issues with newer Symfony components, causing build failures.
 
 **Fix:**
-Updated Panther constraint in Dockerfile (line 82):
-```dockerfile
-symfony/panther:"^2.3"  # Changed from "^2.0"
-```
+Removed Panther entirely from the image (Dockerfile line 82):
+- Removed `symfony/panther` dependency
+- Removed Panther environment configuration (PANTHER_NO_SANDBOX)
+- Removed GeckoDriver installation (only needed for Panther)
+
+**Note:** Projects requiring browser testing can install Panther locally as a dev dependency.
 
 ## CI/CD Integration
 

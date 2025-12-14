@@ -64,49 +64,8 @@ docker run --rm "${IMAGE_NAME}" sh -c 'touch /tools/.composer/cache/test-file &&
 echo "  ✅ User can write to /tools/.composer/cache"
 echo ""
 
-# Test 7: Check Symfony Panther version
-echo "✓ Test 7: Checking Symfony Panther version..."
-PANTHER_VERSION=$(docker run --rm "${IMAGE_NAME}" composer global show symfony/panther --format=json 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-if [[ -n "${PANTHER_VERSION}" ]]; then
-    echo "  ℹ️  Panther version: ${PANTHER_VERSION}"
-    # Extract major.minor version (e.g., "2.3" from "v2.3.0")
-    PANTHER_MAJOR_MINOR=$(echo "${PANTHER_VERSION}" | sed 's/^v//' | cut -d. -f1,2)
-    # Compare versions: 2.3 or higher
-    if awk "BEGIN {exit !($PANTHER_MAJOR_MINOR >= 2.3)}"; then
-        echo "  ✅ Panther version is 2.3 or higher (compatible with browser-kit 8.0)"
-    else
-        echo "  ❌ Panther version is too old (needs 2.3+)"
-        exit 1
-    fi
-else
-    echo "  ❌ Panther is not installed"
-    exit 1
-fi
-echo ""
-
-# Test 8: Check BrowserKit compatibility
-echo "✓ Test 8: Testing Symfony Panther/BrowserKit compatibility..."
-COMPATIBILITY_TEST=$(docker run --rm "${IMAGE_NAME}" php -r '
-    require "/tools/.composer/vendor-bin/phpunit/vendor/autoload.php";
-    try {
-        $reflection = new ReflectionMethod("Symfony\Component\Panther\Client", "doRequest");
-        echo "Method exists";
-    } catch (Exception $e) {
-        echo "Error: " . $e->getMessage();
-        exit(1);
-    }
-' 2>&1)
-
-if [[ "${COMPATIBILITY_TEST}" == "Method exists" ]]; then
-    echo "  ✅ Panther/BrowserKit are compatible"
-else
-    echo "  ❌ Panther/BrowserKit compatibility issue: ${COMPATIBILITY_TEST}"
-    exit 1
-fi
-echo ""
-
-# Test 9: Test tar cache extraction simulation
-echo "✓ Test 9: Testing tar cache extraction (simulated)..."
+# Test 7: Test tar cache extraction simulation
+echo "✓ Test 7: Testing tar cache extraction (simulated)..."
 docker run --rm -v "$(pwd)/tests/fixtures:/tmp/test" "${IMAGE_NAME}" sh -c '
     mkdir -p /tmp/test-extract
     echo "test content" > /tmp/test-extract/test.txt
@@ -126,8 +85,8 @@ else
 fi
 echo ""
 
-# Test 10: Check PHP extensions
-echo "✓ Test 10: Checking essential PHP extensions..."
+# Test 8: Check PHP extensions
+echo "✓ Test 8: Checking essential PHP extensions..."
 EXTENSIONS=("xdebug" "intl" "zip" "gd" "pdo_pgsql" "redis" "apcu")
 for ext in "${EXTENSIONS[@]}"; do
     if docker run --rm "${IMAGE_NAME}" php -m | grep -q "^${ext}$"; then

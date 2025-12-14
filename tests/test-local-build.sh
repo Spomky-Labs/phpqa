@@ -58,26 +58,8 @@ docker run --rm "${IMAGE_NAME}" sh -c 'touch /tools/.composer/cache/test-file &&
 echo "  ✅ User can write to /tools/.composer/cache"
 echo ""
 
-# Test 4: Check Symfony Panther version
-echo "✓ Test 4: Checking Symfony Panther version..."
-PANTHER_VERSION=$(docker run --rm "${IMAGE_NAME}" composer global show symfony/panther --format=json 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-if [[ -n "${PANTHER_VERSION}" ]]; then
-    echo "  ℹ️  Panther version: ${PANTHER_VERSION}"
-    PANTHER_MAJOR_MINOR=$(echo "${PANTHER_VERSION}" | sed 's/^v//' | cut -d. -f1,2)
-    if awk "BEGIN {exit !($PANTHER_MAJOR_MINOR >= 2.3)}"; then
-        echo "  ✅ Panther version is 2.3 or higher"
-    else
-        echo "  ❌ Panther version is too old (needs 2.3+)"
-        exit 1
-    fi
-else
-    echo "  ❌ Panther is not installed"
-    exit 1
-fi
-echo ""
-
-# Test 5: Test tar functionality with utime operations
-echo "✓ Test 5: Testing tar with utime operations (cache scenario)..."
+# Test 4: Test tar functionality with utime operations
+echo "✓ Test 4: Testing tar with utime operations (cache scenario)..."
 docker run --rm "${IMAGE_NAME}" sh -c '
     mkdir -p /tmp/test-cache
     echo "test" > /tmp/test-cache/file.txt
