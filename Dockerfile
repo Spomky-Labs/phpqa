@@ -20,12 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	curl \
 	tar \
 	wget \
- && if [ "$WITH_CHROMIUM" = "true" ]; then \
-		apt-get install -y --no-install-recommends chromium chromium-driver; \
-	fi \
- && if [ "$WITH_FIREFOX" = "true" ]; then \
-		apt-get install -y --no-install-recommends firefox-esr; \
-	fi \
  && docker-php-source extract \
  # Add install-php-extensions
  && curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
