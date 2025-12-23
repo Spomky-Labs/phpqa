@@ -1,15 +1,10 @@
 ARG PHP_VERSION=8.4
-ARG WITH_CHROMIUM=false
-ARG WITH_FIREFOX=false
 
 FROM jakzal/phpqa:php${PHP_VERSION} AS base
 
 LABEL maintainer="Florent Morselli <florent.morselli@spomky-labs.com>"
 
 USER root
-
-ARG WITH_CHROMIUM
-ARG WITH_FIREFOX
 
 # Install all dependencies in a single layer to reduce image size
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -25,17 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
 	-o /usr/local/bin/install-php-extensions \
  && chmod +x /usr/local/bin/install-php-extensions \
- # Install PHP extensions
+ # Install PHP extensions (compiled / bundled)
  && install-php-extensions \
 		@composer \
-		apcu \
 		intl \
 		zip \
 		pdo_pgsql \
 		gmp \
 		gd \
-		imagick \
-		amqp \
 		fileinfo \
 		ftp \
 		iconv \
@@ -43,19 +35,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		gettext \
 		sodium \
 		opcache \
-		redis \
 		uuid \
 		xsl \
 		xml \
-		brotli \
-		zstd \
- # Install Xdebug
- && pecl install xdebug \
- && docker-php-ext-enable xdebug \
  # Clean up build dependencies and caches
  && docker-php-source delete \
  && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
+
+# Install PIE
+RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
+	-o /usr/local/bin/pie \
+ && chmod +x /usr/local/bin/pie
+
+# Install PHP extensions via PIE when available
+RUN pie install \
+		apcu/apcu \
+		imagick/imagick \
+		phpredis/phpredis \
+		php-amqp/php-amqp \
+		kjdev/brotli \
+		kjdev/zstd \
+		xdebug/xdebug \
+ && docker-php-ext-enable apcu imagick redis amqp brotli zstd xdebug \
+ && rm -rf /tmp/* /var/tmp/*
 
 # Install global PHPStan tools (clear cache after)
 RUN composer global bin phpstan require \
@@ -81,10 +84,6 @@ RUN composer global bin phpunit require \
 RUN curl -sSL https://castor.jolicode.com/install | bash \
  && chmod +x ~/.local/bin/castor \
  && mv ~/.local/bin/castor /usr/local/bin/castor \
- # Install PIE
- && curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
-	-o /usr/local/bin/pie \
- && chmod +x /usr/local/bin/pie \
  && rm -rf /tmp/* /var/tmp/*
 
 # Fix permissions for /tools directory to allow cache operations
