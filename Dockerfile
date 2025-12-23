@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	build-essential \
 	autoconf \
 	librabbitmq-dev \
+	libmagickwand-dev \
+	libmagickcore-dev \
+	libbrotli-dev \
+	libzstd-dev \
 	git \
 	curl \
 	tar \
@@ -20,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
 	-o /usr/local/bin/install-php-extensions \
  && chmod +x /usr/local/bin/install-php-extensions \
+ # Install PIE
+ && curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
+	-o /usr/local/bin/pie \
+ && chmod +x /usr/local/bin/pie \
  # Install PHP extensions (compiled / bundled)
  && install-php-extensions \
 		@composer \
@@ -38,18 +46,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		uuid \
 		xsl \
 		xml \
- # Clean up build dependencies and caches
- && docker-php-source delete \
- && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
-
-# Install PIE
-RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
-	-o /usr/local/bin/pie \
- && chmod +x /usr/local/bin/pie
-
-# Install PHP extensions via PIE when available
-RUN pie install \
+ # Install PHP extensions via PIE when available
+ && pie install \
 		apcu/apcu \
 		imagick/imagick \
 		phpredis/phpredis \
@@ -58,7 +56,10 @@ RUN pie install \
 		kjdev/zstd \
 		xdebug/xdebug \
  && docker-php-ext-enable apcu imagick redis amqp brotli zstd xdebug \
- && rm -rf /tmp/* /var/tmp/*
+ # Clean up build dependencies and caches
+ && docker-php-source delete \
+ && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev libmagickwand-dev libmagickcore-dev libbrotli-dev libzstd-dev \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
 
 # Install global PHPStan tools (clear cache after)
 RUN composer global bin phpstan require \
