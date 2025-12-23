@@ -6,28 +6,59 @@ LABEL maintainer="Florent Morselli <florent.morselli@spomky-labs.com>"
 
 USER root
 
-# Install all dependencies in a single layer to reduce image size
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	build-essential \
-	autoconf \
-	librabbitmq-dev \
-	git \
-	curl \
-	tar \
-	wget \
- && docker-php-source extract \
- # Add install-php-extensions
- && curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
-	-o /usr/local/bin/install-php-extensions \
- && chmod +x /usr/local/bin/install-php-extensions \
- # Install PHP extensions (compiled / bundled)
- && install-php-extensions \
+# ------------------------------------------------------------
+# Base system dependencies
+# ------------------------------------------------------------
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		build-essential \
+		autoconf \
+		librabbitmq-dev \
+		libmagickwand-dev \
+		libmagickcore-dev \
+		libbrotli-dev \
+		libzstd-dev \
+		git \
+		curl \
+		tar \
+		wget
+
+# ------------------------------------------------------------
+# PHP source (required for extensions)
+# ------------------------------------------------------------
+RUN set -eux; \
+	docker-php-source extract
+
+# ------------------------------------------------------------
+# install-php-extensions helper
+# ------------------------------------------------------------
+RUN set -eux; \
+	curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
+		-o /usr/local/bin/install-php-extensions; \
+	chmod +x /usr/local/bin/install-php-extensions
+
+# ------------------------------------------------------------
+# PIE
+# ------------------------------------------------------------
+RUN set -eux; \
+	curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
+		-o /usr/local/bin/pie; \
+	chmod +x /usr/local/bin/pie
+
+# ------------------------------------------------------------
+# Core PHP extensions (non-PIE)
+# ------------------------------------------------------------
+RUN set -eux; \
+	install-php-extensions \
 		@composer \
+		apcu \
 		intl \
 		zip \
 		pdo_pgsql \
 		gmp \
 		gd \
+		amqp \
 		fileinfo \
 		ftp \
 		iconv \
@@ -37,28 +68,44 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		opcache \
 		uuid \
 		xsl \
-		xml \
- # Clean up build dependencies and caches
- && docker-php-source delete \
- && apt-get purge -y --auto-remove build-essential autoconf librabbitmq-dev \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
+		xml
 
-# Install PIE
-RUN curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar \
-	-o /usr/local/bin/pie \
- && chmod +x /usr/local/bin/pie
+# ------------------------------------------------------------
+# PIE extensions
+# ------------------------------------------------------------
+RUN set -eux; pie install imagick/imagick
+RUN set -eux; pie install phpredis/phpredis
+RUN set -eux; pie install kjdev/brotli
+RUN set -eux; pie install kjdev/zstd
+RUN set -eux; pie install xdebug/xdebug
 
-# Install PHP extensions via PIE when available
-RUN pie install \
-		apcu/apcu \
-		imagick/imagick \
-		phpredis/phpredis \
-		php-amqp/php-amqp \
-		kjdev/brotli \
-		kjdev/zstd \
-		xdebug/xdebug \
- && docker-php-ext-enable apcu imagick redis amqp brotli zstd xdebug \
- && rm -rf /tmp/* /var/tmp/*
+# ------------------------------------------------------------
+# Enable extensions
+# ------------------------------------------------------------
+RUN set -eux; \
+	docker-php-ext-enable \
+		apcu \
+		imagick \
+		redis \
+		amqp \
+		brotli \
+		zstd \
+		xdebug
+
+# ------------------------------------------------------------
+# Cleanup build deps
+# ------------------------------------------------------------
+RUN set -eux; \
+	docker-php-source delete; \
+	apt-get purge -y --auto-remove \
+		build-essential \
+		autoconf \
+		librabbitmq-dev \
+		libmagickwand-dev \
+		libmagickcore-dev \
+		libbrotli-dev \
+		libzstd-dev; \
+	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
 
 # Install global PHPStan tools (clear cache after)
 RUN composer global bin phpstan require \
@@ -92,3 +139,4 @@ RUN chown -R 1001:1001 /tools \
 
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
+
