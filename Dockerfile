@@ -52,11 +52,13 @@ RUN set -eux; \
 RUN set -eux; \
 	install-php-extensions \
 		@composer \
+		apcu \
 		intl \
 		zip \
 		pdo_pgsql \
 		gmp \
 		gd \
+		amqp \
 		fileinfo \
 		ftp \
 		iconv \
@@ -69,12 +71,10 @@ RUN set -eux; \
 		xml
 
 # ------------------------------------------------------------
-# PIE extensions (one RUN so you see exactly which fails)
+# PIE extensions
 # ------------------------------------------------------------
-RUN set -eux; pie install apcu/apcu
 RUN set -eux; pie install imagick/imagick
 RUN set -eux; pie install phpredis/phpredis
-RUN set -eux; pie install php-amqp/php-amqp
 RUN set -eux; pie install kjdev/brotli
 RUN set -eux; pie install kjdev/zstd
 RUN set -eux; pie install xdebug/xdebug
@@ -107,43 +107,36 @@ RUN set -eux; \
 		libzstd-dev; \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/bin/install-php-extensions
 
-# ------------------------------------------------------------
-# Global PHPStan tools
-# ------------------------------------------------------------
+# Install global PHPStan tools (clear cache after)
 RUN composer global bin phpstan require \
 	php-static-analysis/phpstan-extension \
 	staabm/phpstan-todo-by \
 	struggle-for-php/sfp-phpstan-psr-log \
 	phpstan/phpstan-deprecation-rules \
 	phpstan/phpstan-strict-rules \
-	--no-scripts --no-interaction --no-suggest \
+    --no-scripts --no-interaction --no-suggest \
  && composer global clear-cache
 
-# ------------------------------------------------------------
-# PHPUnit plugins
-# ------------------------------------------------------------
+# Install phpunit plugins (clear cache after)
 RUN composer global bin phpunit require \
-	ergebnis/phpunit-slow-test-detector \
-	digitalrevolution/phpunit-extensions \
-	symfony/browser-kit:"^6.4|^7.0|^8.0" \
-	symfony/css-selector:"^6.4|^7.0|^8.0" \
-	zenstruck/foundry:"^2.8" \
-	--no-scripts --no-interaction --no-suggest \
+    ergebnis/phpunit-slow-test-detector \
+    digitalrevolution/phpunit-extensions \
+    symfony/browser-kit:"^6.4|^7.0|^8.0" \
+    symfony/css-selector:"^6.4|^7.0|^8.0" \
+    zenstruck/foundry:"^2.8" \
+    --no-scripts --no-interaction --no-suggest \
  && composer global clear-cache
 
-# ------------------------------------------------------------
-# Standalone tools
-# ------------------------------------------------------------
+# Install standalone tools in a single layer
 RUN curl -sSL https://castor.jolicode.com/install | bash \
  && chmod +x ~/.local/bin/castor \
  && mv ~/.local/bin/castor /usr/local/bin/castor \
  && rm -rf /tmp/* /var/tmp/*
 
-# ------------------------------------------------------------
-# Permissions
-# ------------------------------------------------------------
+# Fix permissions for /tools directory to allow cache operations
 RUN chown -R 1001:1001 /tools \
  && chmod -R 755 /tools
 
+# Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
 
