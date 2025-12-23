@@ -2,8 +2,9 @@ name: CI & Build PHPQA
 
 on:
   push:
-    branches: ["*"]
-    tags: ["*"]
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
   schedule:
     - cron: '19 2 * * 0'
