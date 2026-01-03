@@ -137,6 +137,12 @@ RUN set -eux; \
 	mv ~/.local/bin/castor /usr/local/bin/castor; \
 	rm -rf /tmp/* /var/tmp/* ~/.cache
 
+# ------------------------------------------------------------
+# Fix cache directory permissions for user 1001
+# ------------------------------------------------------------
+RUN set -eux; \
+	chown -R 1001:1001 /tools/.composer/cache
+
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
 
