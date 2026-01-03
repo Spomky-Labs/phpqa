@@ -133,10 +133,6 @@ RUN curl -sSL https://castor.jolicode.com/install | bash \
  && mv ~/.local/bin/castor /usr/local/bin/castor \
  && rm -rf /tmp/* /var/tmp/*
 
-# Fix permissions for /tools directory to allow cache operations
-RUN chown -R 1001:1001 /tools \
- && chmod -R 755 /tools
-
 # Reset permissions to default non-root user (1001 as per your workflow)
 USER 1001
 
