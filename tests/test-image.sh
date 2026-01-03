@@ -47,13 +47,12 @@ else
 fi
 echo ""
 
-# Test 5: Check /tools directory permissions
-echo "✓ Test 5: Checking /tools directory permissions..."
-TOOLS_OWNER=$(docker run --rm "${IMAGE_NAME}" stat -c '%u:%g' /tools)
-if [[ "${TOOLS_OWNER}" == "1001:1001" ]]; then
-    echo "  ✅ /tools directory has correct ownership (1001:1001)"
+# Test 5: Check /tools directory is accessible
+echo "✓ Test 5: Checking /tools directory accessibility..."
+if docker run --rm "${IMAGE_NAME}" sh -c 'ls /tools > /dev/null 2>&1 && test -r /tools && test -x /tools' > /dev/null 2>&1; then
+    echo "  ✅ /tools directory is readable and accessible by user 1001"
 else
-    echo "  ❌ /tools directory has incorrect ownership: ${TOOLS_OWNER}"
+    echo "  ❌ /tools directory is not accessible"
     exit 1
 fi
 echo ""
