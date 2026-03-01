@@ -126,7 +126,11 @@ RUN set -eux; \
 		symfony/css-selector:"^6.4|^7.0|^8.0" \
 		zenstruck/foundry:"^2.8" \
 		--no-scripts --no-interaction --no-suggest; \
-	composer global clear-cache
+	composer global bin infection require \
+		infection/infection:"^0.32" \
+		--no-scripts --no-interaction --no-suggest; \
+	composer global clear-cache; \
+	rm -f /tools/infection /tools/.phive/phars/infection-*.phar
 
 # ------------------------------------------------------------
 # Install standalone tools
