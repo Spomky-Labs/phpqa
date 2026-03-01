@@ -131,7 +131,8 @@ RUN set -eux; \
 		infection/infection:"^0.32" \
 		--no-scripts --no-interaction --no-suggest; \
 	composer global clear-cache; \
-	rm -f /tools/infection /tools/.phive/phars/infection-*.phar
+	rm -f /tools/.phive/phars/infection-*.phar; \
+	ln -sf /tools/.composer/vendor-bin/infection/vendor/bin/infection /tools/infection
 
 # ------------------------------------------------------------
 # Install standalone tools
