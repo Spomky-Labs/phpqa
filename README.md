@@ -124,7 +124,7 @@ ship its own copy in `vendor/bin`:
 | `infection` | `/tools/.composer/vendor-bin/infection` |
 | `deptrac`, `composer normalize` | `/tools/.composer/vendor` |
 | PHPUnit helpers (slow test detector, foundry, browser-kit, ...) | `/tools/.composer/vendor-bin/phpunit` |
-| `phpunit-10`, `phpunit-11`, `phpunit-12` (PHAR), `phpunit` → `phpunit-11` | `/tools` |
+| `phpunit-10` … `phpunit-13` (PHAR), `phpunit` → newest one supported by the PHP version | `/tools` |
 | `parallel-lint` (PHAR) | `/tools` |
 | `composer`, `castor` | `/usr/local/bin` |
 

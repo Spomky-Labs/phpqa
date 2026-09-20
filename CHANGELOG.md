@@ -13,7 +13,8 @@ All notable changes to this project will be documented in this file.
 - PHP extensions are installed with `install-php-extensions` (build deps are purged in the
   same layer); PIE and `docker-php-source` are gone.
 - Only the tools used by the Castor tasks are installed: PHPStan (+ extensions), ECS, Rector,
-  Deptrac, Infection, PHPUnit 10/11/12 PHARs, PHPUnit helper libraries, parallel-lint,
+  Deptrac, Infection, PHPUnit 10-13 PHARs (`phpunit` points to the newest one the PHP
+  version supports), PHPUnit helper libraries, parallel-lint,
   composer-normalize. Identical files across tools are hard-linked to save space.
 - The `/tools/.composer/vendor-bin/{phpstan,phpunit,...}` layout is preserved, so project
   configurations referencing it keep working.

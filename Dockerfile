@@ -150,9 +150,14 @@ RUN set -eux; \
 ADD --chmod=755 https://phar.phpunit.de/phpunit-10.phar /tools/phpunit-10
 ADD --chmod=755 https://phar.phpunit.de/phpunit-11.phar /tools/phpunit-11
 ADD --chmod=755 https://phar.phpunit.de/phpunit-12.phar /tools/phpunit-12
+ADD --chmod=755 https://phar.phpunit.de/phpunit-13.phar /tools/phpunit-13
 ADD --chmod=755 https://github.com/php-parallel-lint/PHP-Parallel-Lint/releases/latest/download/parallel-lint.phar /tools/parallel-lint
 RUN set -eux; \
-	ln -s /tools/phpunit-11 /tools/phpunit; \
+	# "phpunit" -> the newest PHAR that runs on this PHP version
+	for v in 13 12 11 10; do \
+		if php /tools/phpunit-$v --version >/dev/null 2>&1; then ln -s /tools/phpunit-$v /tools/phpunit; break; fi; \
+	done; \
+	test -L /tools/phpunit; \
 	# Static build (embeds its own PHP): the PHAR requires PHP >= 8.4
 	curl -sSL https://castor.jolicode.com/install | bash -s -- --static; \
 	mv ~/.local/bin/castor /usr/local/bin/castor; \
