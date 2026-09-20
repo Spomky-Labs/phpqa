@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed - Lean Docker image (3.2 GB → ~0.8 GB, 689 MB → ~150 MB compressed)
+
+- The image is no longer based on `jakzal/phpqa`. It is a two-stage build on the official
+  `php:X.Y-cli` image, with a `debian:slim` runtime stage that only contains the PHP binary,
+  the compiled extensions, the QA tools and their runtime libraries (no compiler, no headers,
+  no PHP sources, no unused toolbox tools).
+- PHP extensions are installed with `install-php-extensions` (build deps are purged in the
+  same layer); PIE and `docker-php-source` are gone.
+- Only the tools used by the Castor tasks are installed: PHPStan (+ extensions), ECS, Rector,
+  Deptrac, Infection, PHPUnit 10/11/12 PHARs, PHPUnit helper libraries, parallel-lint,
+  composer-normalize. Identical files across tools are hard-linked to save space.
+- The `/tools/.composer/vendor-bin/{phpstan,phpunit,...}` layout is preserved, so project
+  configurations referencing it keep working.
+- `XDEBUG_MODE` now defaults to `off` (the CI sets `coverage` for test jobs).
+- `date.timezone` is `UTC` (was `Europe/London`).
+- Removed: `ast` extension, `graphviz`, `make`, PIE, and every jakzal toolbox tool that the
+  Castor tasks do not call (psalm, phpmd, phpcs, behat, codeception, ...).
+
+### Fixed
+
+- `castor` is now installed as a static binary, so it also works on the PHP 8.2 and 8.3
+  images (the PHAR requires PHP >= 8.4 and was broken there).
+
 ### Added - Centralized CI/CD System
 
 #### 🔄 Reusable Castor Tasks

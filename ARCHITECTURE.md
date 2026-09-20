@@ -31,11 +31,11 @@ phpqa/
 
 ### 1. Image Docker (`Dockerfile`)
 
-Image Docker basée sur `jakzal/phpqa` avec :
-- Outils QA PHP (PHPStan, PHPUnit, Infection, etc.)
-- Castor pré-installé
-- PIE (PHP Installer for Extensions)
-- Support des tests navigateur (Chromium, Firefox)
+Image Docker construite en deux étapes (`php:X.Y-cli` pour compiler, `debian:slim` à l'exécution) avec :
+- Uniquement les outils QA appelés par les tâches Castor (PHPStan, ECS, Rector, Deptrac, PHPUnit, Infection, parallel-lint)
+- Castor pré-installé (binaire statique)
+- Les extensions PHP nécessaires aux projets Symfony/Doctrine
+- Le layout `/tools/.composer/vendor-bin/...` hérité de `jakzal/phpqa`, référencé par les projets
 
 **Publié sur:** `ghcr.io/spomky-labs/phpqa:X.Y`
 

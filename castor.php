@@ -22,7 +22,7 @@ function build(): void
 {
     io()->title('Building Docker images');
 
-    $versions = ['8.2', '8.3', '8.4'];
+    $versions = ['8.2', '8.3', '8.4', '8.5'];
 
     foreach ($versions as $version) {
         io()->section("Building PHP $version");

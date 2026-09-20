@@ -2,12 +2,11 @@
 
 This repository provides:
 
-1. **🐳 Custom Docker Image** based on [`jakzal/phpqa`](https://github.com/jakzal/phpqa) with:
-   - ✅ Additional QA tools and extensions for PHP projects
-   - 🛠️ [Castor](https://github.com/jolicode/castor) pre-installed as a task runner
-   - 📦 [PIE](https://github.com/php/pie) - PHP Installer for Extensions
+1. **🐳 Lean Docker Image** (~800 MB, ~150 MB compressed) built on the official `php:X.Y-cli` images with:
+   - ✅ Only the QA tools used by the Castor tasks (PHPStan, ECS, Rector, Deptrac, PHPUnit, Infection, parallel-lint)
+   - 🛠️ [Castor](https://github.com/jolicode/castor) pre-installed as a task runner (static build, works on every PHP version)
+   - 🧩 The PHP extensions needed by Symfony/Doctrine projects (intl, pdo_pgsql, redis, amqp, imagick, xdebug, ...)
    - 🧪 Enhanced PHPUnit, PHPStan, and Infection tooling
-   - 🌐 Browser testing support with Symfony Panther (Chrome & Firefox)
 
 2. **🔄 Centralized Castor Tasks** for quality assurance:
    - Reusable Castor tasks across all your projects
@@ -71,31 +70,18 @@ Replace `<version>` with one of the supported PHP versions below.
 
 ### Build Arguments
 
-You can customize the image by using build arguments to include or exclude browsers:
-
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `WITH_CHROMIUM` | `true` | Install Chromium and ChromeDriver for Panther |
-| `WITH_FIREFOX` | `true` | Install Firefox ESR and GeckoDriver for Panther |
-
-#### Build Examples
+| `PHP_VERSION` | `8.4` | PHP version (`8.2`, `8.3`, `8.4`, `8.5`) |
+| `DEBIAN_RELEASE` | `trixie` | Debian release used for both build and runtime stages |
 
 ```bash
-# Build without any browsers (smallest image, ~500MB-1GB smaller)
-docker build --build-arg WITH_CHROMIUM=false --build-arg WITH_FIREFOX=false \
-    -t ghcr.io/spomky-labs/phpqa:8.4-no-browsers .
-
-# Build with Chrome only
-docker build --build-arg WITH_FIREFOX=false \
-    -t ghcr.io/spomky-labs/phpqa:8.4-chrome-only .
-
-# Build with Firefox only
-docker build --build-arg WITH_CHROMIUM=false \
-    -t ghcr.io/spomky-labs/phpqa:8.4-firefox-only .
-
-# Build with both browsers (default behavior)
-docker build -t ghcr.io/spomky-labs/phpqa:8.4 .
+docker build --build-arg PHP_VERSION=8.3 -t ghcr.io/spomky-labs/phpqa:8.3 .
 ```
+
+The image is a two-stage build: extensions are compiled and tools are installed in a
+`php:X.Y-cli` stage, then only the PHP binary, the extensions, the tools and their
+runtime libraries are copied into a `debian:slim` runtime stage (no compiler, no headers).
 
 ---
 
@@ -127,39 +113,28 @@ docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 php
 
 ## 🛠️ Pre-installed Tools
 
-This image includes:
+All tools are on the `PATH` and are found by `composer exec -- <tool>` when a project does not
+ship its own copy in `vendor/bin`:
 
-- PHP QA tools from [`jakzal/phpqa`](https://github.com/jakzal/phpqa)
-- [Castor](https://github.com/jolicode/castor) - Task runner
-- [PIE](https://github.com/php/pie) - PHP Installer for Extensions
-- Enhanced PHPStan, PHPUnit, and Infection extensions
-- Chromium + ChromeDriver for browser testing
-- Firefox ESR + GeckoDriver for browser testing
+| Tool | Location |
+|------|----------|
+| `phpstan` (+ extensions) | `/tools/.composer/vendor-bin/phpstan` |
+| `ecs` | `/tools/.composer/vendor-bin/ecs` |
+| `rector` | `/tools/.composer/vendor-bin/rector` |
+| `infection` | `/tools/.composer/vendor-bin/infection` |
+| `deptrac`, `composer normalize` | `/tools/.composer/vendor` |
+| PHPUnit helpers (slow test detector, foundry, browser-kit, ...) | `/tools/.composer/vendor-bin/phpunit` |
+| `phpunit-10`, `phpunit-11`, `phpunit-12` (PHAR), `phpunit` → `phpunit-11` | `/tools` |
+| `parallel-lint` (PHAR) | `/tools` |
+| `composer`, `castor` | `/usr/local/bin` |
 
----
+Other tools: `git`, `curl`, `wget`, `jq`, `unzip`, `openssh-client`.
 
-## 📦 PIE - PHP Installer for Extensions
+PHP extensions: amqp, apcu, bcmath, brotli, bz2, exif, gd, gettext, gmp, imagick, intl, opcache,
+pcntl, pcov, pdo_pgsql, pdo_sqlite, redis, sodium, uuid, xdebug, xsl, zip, zstd (plus the
+extensions bundled with the official PHP image).
 
-PIE is the official PHP extension installer that integrates with Packagist.
-
-### Usage Examples
-
-```bash
-# Search for available extensions
-docker run --rm ghcr.io/spomky-labs/phpqa:8.4 pie search
-
-# Install an extension from Packagist
-docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
-    pie install vendor/extension-name
-
-# List installed extensions
-docker run --rm ghcr.io/spomky-labs/phpqa:8.4 pie list
-
-# Get information about an extension
-docker run --rm ghcr.io/spomky-labs/phpqa:8.4 pie info vendor/extension-name
-```
-
-Browse available extensions at [packagist.org/extensions](https://packagist.org/extensions).
+`XDEBUG_MODE` defaults to `off`; set `XDEBUG_MODE=coverage` when collecting coverage.
 
 ---
 
@@ -267,132 +242,6 @@ class MyTest extends TestCase
 
 ---
 
-## 🌐 Symfony Panther - Browser Testing
-
-End-to-end testing with real browsers (Chrome and Firefox) for JavaScript-heavy applications.
-
-### Available Browsers
-
-- **Chromium** + ChromeDriver (optional, enabled by default with `WITH_CHROMIUM=true`)
-- **Firefox ESR** + GeckoDriver v0.36.0 (optional, enabled by default with `WITH_FIREFOX=true`)
-
-**Note:** If you don't need browser testing, you can build the image without browsers using `--build-arg WITH_CHROMIUM=false --build-arg WITH_FIREFOX=false` to reduce the image size by approximately 500MB-1GB.
-
-### Environment Configuration
-
-The following environment variables are configured when browsers are installed:
-
-```bash
-PANTHER_NO_SANDBOX=1
-# Only if WITH_CHROMIUM=true:
-PANTHER_CHROME_ARGUMENTS='--disable-dev-shm-usage --no-sandbox --disable-gpu --headless --window-size=1920,1080'
-PANTHER_CHROME_DRIVER_BINARY=/usr/bin/chromedriver
-# Only if WITH_FIREFOX=true:
-PANTHER_FIREFOX_ARGUMENTS='-headless'
-```
-
-### Usage Examples
-
-#### Basic Chrome Test
-
-```php
-use Symfony\Component\Panther\Client;
-
-// Create a Chrome client
-$client = Client::createChromeClient();
-
-// Navigate to a page
-$crawler = $client->request('GET', 'https://example.com');
-
-// Interact with JavaScript
-$client->executeScript('document.querySelector("#button").click()');
-
-// Wait for AJAX to complete
-$client->waitFor('#result');
-
-// Take a screenshot
-$client->takeScreenshot('screenshot.png');
-```
-
-#### Firefox Test
-
-```php
-use Symfony\Component\Panther\Client;
-
-// Create a Firefox client
-$client = Client::createFirefoxClient();
-
-// Same API as Chrome
-$crawler = $client->request('GET', 'https://example.com');
-```
-
-#### PHPUnit Integration
-
-```php
-use Symfony\Component\Panther\PantherTestCase;
-
-class E2ETest extends PantherTestCase
-{
-    public function testMyApp(): void
-    {
-        $client = static::createPantherClient();
-        $crawler = $client->request('GET', 'http://localhost:8000');
-
-        // Fill a form
-        $form = $crawler->selectButton('Submit')->form([
-            'email' => 'test@example.com',
-            'password' => 'secret',
-        ]);
-        $client->submit($form);
-
-        // Wait for redirect and check result
-        $client->waitForVisibility('#welcome-message');
-        $this->assertSelectorTextContains('#welcome-message', 'Welcome');
-    }
-}
-```
-
-#### Advanced Features
-
-```php
-// Use specific browser
-$client = Client::createChromeClient([
-    'browser' => Client::CHROME,
-]);
-
-// Custom browser arguments
-$client = Client::createChromeClient([], [
-    'capabilities' => [
-        'goog:chromeOptions' => [
-            'args' => ['--window-size=1920,1080', '--disable-notifications'],
-        ],
-    ],
-]);
-
-// Multiple tabs
-$client->request('GET', 'https://example.com');
-$crawler = $client->clickLink('Open in new tab');
-$client->switchTo()->window($client->getWindowHandles()[1]);
-
-// Handle alerts
-$client->switchTo()->alert()->accept();
-```
-
-### Running Panther Tests
-
-```bash
-# Run with Chrome (default)
-docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
-    phpunit --testsuite e2e
-
-# With custom arguments
-docker run --rm -v $(pwd):/project -w /project \
-    -e PANTHER_CHROME_ARGUMENTS='--window-size=1280,720' \
-    ghcr.io/spomky-labs/phpqa:8.4 phpunit
-```
-
----
-
 ## 🦠 Infection - Mutation Testing
 
 Mutation testing framework to ensure your tests are effective.
@@ -437,27 +286,19 @@ Mutation testing modifies your code (creates mutants) to verify if your tests ca
 Here's a complete QA workflow using all tools:
 
 ```bash
-# 1. Install PHP extension if needed
-docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
-    pie install vendor/extension-name
-
-# 2. Run PHPStan with strict rules
+# 1. Run PHPStan with strict rules
 docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     phpstan analyse src tests --level=max
 
-# 3. Run unit tests with slow test detection
+# 2. Run unit tests with slow test detection
 docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     phpunit --testsuite unit
 
-# 4. Run browser tests with Panther
-docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
-    phpunit --testsuite e2e
-
-# 5. Run mutation testing
-docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
+# 3. Run mutation testing
+docker run --rm -e XDEBUG_MODE=coverage -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     infection --threads=4 --min-msi=80
 
-# 6. Run Castor tasks
+# 4. Run Castor tasks
 docker run --rm -v $(pwd):/project -w /project ghcr.io/spomky-labs/phpqa:8.4 \
     castor qa:all
 ```
