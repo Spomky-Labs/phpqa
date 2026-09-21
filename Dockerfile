@@ -1,5 +1,6 @@
 ARG PHP_VERSION=8.4
 ARG DEBIAN_RELEASE=trixie
+ARG MAGO_VERSION=1.50.0
 
 # ============================================================
 # Stage 1: build PHP extensions and install QA tools
@@ -164,6 +165,24 @@ RUN set -eux; \
 	chmod 755 /usr/local/bin/castor
 
 # ------------------------------------------------------------
+# Mago (https://mago.carthage.software/): formatter, linter and analyzer
+# in a single Rust binary. The musl build is statically linked, so it adds
+# nothing to the runtime libraries computed below.
+# ------------------------------------------------------------
+ARG MAGO_VERSION
+ARG TARGETARCH
+RUN set -eux; \
+	case "$TARGETARCH" in \
+		amd64) mago_arch=x86_64 ;; \
+		arm64) mago_arch=aarch64 ;; \
+		*) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+	esac; \
+	target="mago-${MAGO_VERSION}-${mago_arch}-unknown-linux-musl"; \
+	curl -sSL "https://github.com/carthage-software/mago/releases/download/${MAGO_VERSION}/${target}.tar.gz" \
+		| tar -xz -C /tools --strip-components=1 "${target}/mago"; \
+	chmod 755 /tools/mago
+
+# ------------------------------------------------------------
 # Compute the Debian packages providing the shared libraries needed
 # at runtime by PHP, its extensions and Castor. The list is consumed
 # by the runtime stage so it stays correct for every PHP version.
@@ -232,6 +251,7 @@ RUN set -eux; \
 	infection --version; \
 	phpunit --version; \
 	parallel-lint --version; \
+	mago --version; \
 	find /tmp /var/tmp -mindepth 1 -delete; \
 	chown -R 1001:1001 /tools/.composer/cache
 
