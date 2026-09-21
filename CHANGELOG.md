@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Mago 1.50.0 (`/tools/mago`), the formatter, linter and analyzer of Carthage Software.
+  Static musl binary, amd64 and arm64, pinned by the `MAGO_VERSION` build argument.
+  The image carried Mago 1.46.0 through `jakzal/phpqa`; the lean rewrite dropped it.
+
 ### Changed - Lean Docker image (3.2 GB → ~0.8 GB, 689 MB → ~150 MB compressed)
 
 - The image is no longer based on `jakzal/phpqa`. It is a two-stage build on the official
