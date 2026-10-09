@@ -122,9 +122,22 @@ COPY <<EOF /tools/.composer/vendor-bin/infection/composer.json
 }
 EOF
 
+# paratest runs the test files in parallel processes and merges the coverage of its workers itself,
+# which is what sharding a suite across CI jobs cannot do: PHPUnit does not merge XML coverage
+# reports from several runs. It is a Composer package and needs phpunit/phpunit in its own vendor
+# tree, which is usually what makes it awkward beside a PHAR; this tree already holds one, pulled by
+# the extensions it exists for.
+#
+# "^7" rather than a precise version, because the PHP of the build is what decides: paratest 7.26
+# asks for PHP 8.4 and PHPUnit 13.4, 7.20 for PHP 8.3 and PHPUnit 12.5, 7.8 for PHP 8.2 and PHPUnit
+# 11.5. Composer resolves the newest that runs here, and the PHPUnit it brings is the newest that
+# runs here too, which is the same bound the PHAR loop further down uses to pick /tools/phpunit. So
+# the Composer PHPUnit of this tree and that PHAR land on the same version on every PHP the image is
+# built for, and pinning either one is what would make them disagree.
 COPY <<EOF /tools/.composer/vendor-bin/phpunit/composer.json
 {
     "require": {
+        "brianium/paratest": "^7",
         "digitalrevolution/phpunit-extensions": "^1.13",
         "ergebnis/phpunit-slow-test-detector": "^2.24",
         "symfony/browser-kit": "^6.4|^7.0|^8.0",
@@ -143,7 +156,8 @@ RUN set -eux; \
 	ln -s /tools/.composer/vendor-bin/phpstan/vendor/bin/phpstan /tools/phpstan; \
 	ln -s /tools/.composer/vendor-bin/ecs/vendor/bin/ecs /tools/ecs; \
 	ln -s /tools/.composer/vendor-bin/rector/vendor/bin/rector /tools/rector; \
-	ln -s /tools/.composer/vendor-bin/infection/vendor/bin/infection /tools/infection
+	ln -s /tools/.composer/vendor-bin/infection/vendor/bin/infection /tools/infection; \
+	ln -s /tools/.composer/vendor-bin/phpunit/vendor/bin/paratest /tools/paratest
 
 # ------------------------------------------------------------
 # PHAR tools + Castor

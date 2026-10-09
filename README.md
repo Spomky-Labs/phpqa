@@ -3,7 +3,7 @@
 This repository provides:
 
 1. **🐳 Lean Docker Image** (~800 MB, ~150 MB compressed) built on the official `php:X.Y-cli` images with:
-   - ✅ Only the QA tools used by the Castor tasks (PHPStan, ECS, Rector, Deptrac, PHPUnit, Infection, parallel-lint, Mago)
+   - ✅ Only the QA tools used by the Castor tasks (PHPStan, ECS, Rector, Deptrac, PHPUnit, ParaTest, Infection, parallel-lint, Mago)
    - 🛠️ [Castor](https://github.com/jolicode/castor) pre-installed as a task runner (static build, works on every PHP version)
    - 🧩 The PHP extensions needed by Symfony/Doctrine projects (intl, pdo_pgsql, redis, amqp, imagick, xdebug, ...)
    - 🧪 Enhanced PHPUnit, PHPStan, and Infection tooling
@@ -123,6 +123,7 @@ ship its own copy in `vendor/bin`:
 | `rector` | `/tools/.composer/vendor-bin/rector` |
 | `infection` | `/tools/.composer/vendor-bin/infection` |
 | `deptrac`, `composer normalize` | `/tools/.composer/vendor` |
+| `paratest` (parallel PHPUnit, merges the coverage of its workers) | `/tools/.composer/vendor-bin/phpunit` |
 | PHPUnit helpers (slow test detector, foundry, browser-kit, ...) | `/tools/.composer/vendor-bin/phpunit` |
 | `phpunit-10` … `phpunit-13` (PHAR), `phpunit` → newest one supported by the PHP version | `/tools` |
 | `parallel-lint` (PHAR) | `/tools` |
